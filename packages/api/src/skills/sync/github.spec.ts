@@ -3467,6 +3467,54 @@ describe('createGitHubSkillSyncRunner', () => {
       jest.useRealTimers();
     }
   });
+
+  it('uses custom apiUrl from source config when making GitHub API requests', async () => {
+    const customApiUrl = 'https://github.enterprise.example.com/api/v3';
+    const deps = createDeps({
+      getConfig: () => ({
+        github: {
+          enabled: true,
+          intervalMinutes: 60,
+          runOnStartup: false,
+          sources: [
+            {
+              id: 'librechat-skills',
+              owner: 'LibreChat',
+              repo: 'skills',
+              ref: 'main',
+              paths: ['skills'],
+              credentialKey: 'github-skills-prod',
+              apiUrl: customApiUrl,
+            },
+          ],
+        },
+      }),
+    });
+    const runner = createGitHubSkillSyncRunner(deps);
+    await runner.runOnce();
+    const fetchedUrls = (deps.fetchFn as unknown as jest.Mock).mock.calls.map(
+      ([input]: [RequestInfo | URL]) => input.toString(),
+    );
+
+    expect(fetchedUrls.length).toBeGreaterThan(0);
+    for (const url of fetchedUrls) {
+      expect(url).toMatch(/^https:\/\/github\.enterprise\.example\.com\/api\/v3\//);
+    }
+  });
+
+  it('uses default https://api.github.com when apiUrl is not set', async () => {
+    const deps = createDeps();
+    const runner = createGitHubSkillSyncRunner(deps);
+    await runner.runOnce();
+    const fetchedUrls = (deps.fetchFn as unknown as jest.Mock).mock.calls.map(
+      ([input]: [RequestInfo | URL]) => input.toString(),
+    );
+
+    expect(fetchedUrls.length).toBeGreaterThan(0);
+    for (const url of fetchedUrls) {
+      expect(url).toMatch(/^https:\/\/api\.github\.com\//);
+    }
+  });
 });
 
 /** Stands in for any provider: a flat repository held in memory. */

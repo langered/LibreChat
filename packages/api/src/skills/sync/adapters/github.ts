@@ -63,8 +63,8 @@ function buildGitHubHeaders(token: string): HeadersInit {
   };
 }
 
-function buildGitHubUrl(pathname: string): string {
-  return `${GITHUB_API_BASE}${pathname}`;
+function buildGitHubUrl(pathname: string, apiBase?: string): string {
+  return `${apiBase ?? GITHUB_API_BASE}${pathname}`;
 }
 
 function encodeGitHubPath(value: string): string {
@@ -97,10 +97,11 @@ async function githubJson<T>(params: {
   fetchFn: FetchFn;
   token: string;
   pathname: string;
+  apiBase?: string;
 }): Promise<T> {
   let response: Response;
   try {
-    response = await params.fetchFn(buildGitHubUrl(params.pathname), {
+    response = await params.fetchFn(buildGitHubUrl(params.pathname, params.apiBase), {
       headers: buildGitHubHeaders(params.token),
     });
   } catch {
@@ -161,6 +162,7 @@ export function createGitHubRepoAdapter(config: GitHubRepoAdapterConfig): GitRep
       pathname: `/repos/${owner}/${repo}/git/trees/${encodeURIComponent(treeSha)}${
         recursive ? '?recursive=1' : ''
       }`,
+      apiBase: source.apiUrl,
     });
   }
 
@@ -199,6 +201,7 @@ export function createGitHubRepoAdapter(config: GitHubRepoAdapterConfig): GitRep
       fetchFn,
       token,
       pathname: `/repos/${owner}/${repo}/commits/${encodeGitHubPath(source.ref)}`,
+      apiBase: source.apiUrl,
     });
     return { id: commit.sha, treeId: commit.commit.tree.sha };
   }
@@ -231,6 +234,7 @@ export function createGitHubRepoAdapter(config: GitHubRepoAdapterConfig): GitRep
       fetchFn,
       token,
       pathname: `/repos/${owner}/${repo}/git/blobs/${encodeURIComponent(entry.id)}`,
+      apiBase: source.apiUrl,
     });
     if (blob.encoding !== 'base64') {
       throw new SkillSyncError(
