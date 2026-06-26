@@ -637,6 +637,7 @@ const pullRequestTokenReferenceSchema = z
 export const skillSyncGitHubSourceSchema = z
   .object({
     id: skillSyncIdentifierSchema,
+    apiUrl: z.string().url().optional(),
     owner: skillSyncGitHubOwnerSchema,
     repo: skillSyncGitHubRepoSchema,
     ref: skillSyncGitHubRefSchema.default('main'),
